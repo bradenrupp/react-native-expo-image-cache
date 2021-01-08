@@ -20,5 +20,5 @@
     "allowSyntheticDefaultImports": true,
     "types": ["react", "react-native"]
   },
-  "include": ["src/index.ts"]
+  "include": ["src/index.ts", "tsconfig.json]
 }
