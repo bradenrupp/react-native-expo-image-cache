@@ -8,7 +8,7 @@ export interface DownloadOptions {
   headers?: { [name: string]: string };
 }
 
-const BASE_DIR = `${FileSystem.cacheDirectory}expo-image-cache/`;
+const BASE_DIR = `${FileSystem.documentDirectory}expo-image-cache/`;
 
 export class CacheEntry {
   uri: string;
@@ -51,6 +51,10 @@ export default class CacheManager {
     await FileSystem.makeDirectoryAsync(BASE_DIR);
   }
 
+  static async delete(uri: string): Promise<void> {
+    await removeCacheEntry(uri);
+  }
+
   static async getCacheSize(): Promise<number> {
     const result = await FileSystem.getInfoAsync(BASE_DIR);
     if (!result.exists) {
@@ -60,10 +64,24 @@ export default class CacheManager {
   }
 }
 
-const getCacheEntry = async (uri: string): Promise<{ exists: boolean; path: string; tmpPath: string }> => {
+const getPath = (uri: string) => {
   const filename = uri.substring(uri.lastIndexOf("/"), uri.indexOf("?") === -1 ? uri.length : uri.indexOf("?"));
   const ext = filename.indexOf(".") === -1 ? ".jpg" : filename.substring(filename.lastIndexOf("."));
   const path = `${BASE_DIR}${SHA1(uri)}${ext}`;
+  return { path, ext };
+};
+
+const removeCacheEntry = async (uri: string): Promise<void> => {
+  const { path } = getPath(uri);
+  try {
+    await FileSystem.deleteAsync(path, { idempotent: true });
+  } catch (e) {
+    throw new Error("Could not delete entry");
+  }
+};
+
+const getCacheEntry = async (uri: string): Promise<{ exists: boolean; path: string; tmpPath: string }> => {
+  const { path, ext } = getPath(uri);
   const tmpPath = `${BASE_DIR}${SHA1(uri)}-${_.uniqueId()}${ext}`;
   // TODO: maybe we don't have to do this every time
   try {
